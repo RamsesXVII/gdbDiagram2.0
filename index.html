@@ -9,32 +9,57 @@
   
   <div id="myDiv"><!-- Plotly chart will be drawn inside this DIV --></div>
   <script>
+function convertDateFotmate(p1) {
+    year=p1.getFullYear().toString()
+    month=(p1.getMonth()+1).toString()     
+    day=p1.getDate().toString()
+    hour=p1.getHours().toString()
+    minutes=p1.getMinutes().toString()
+    seconds=p1.getSeconds().toString()
+    return year+"-"+month+"-"+day+"T"+hour+":"+minutes+":"+  seconds    // The function returns the product of p1 and p2
+}
+
+
 d3.json("https://stat.ripe.net/data/bgplay/data.json?resource=193.204.167.185", function(error,json){
+    start=json.data.query_starttime
+    end=json.data.query_endtime
+
     asPathToId=new Object()
     asPathToId["W"]=0
 
     idSequence=[]
     timestampSequence=[]
+    timestampSequenceCompressed=[]
+
+    counterTimestampCompressed=new Date(start)
+
     counter=100
+
+
+
 
     cp="04-192.65.185.195"
     
-    start=json.data.query_starttime.replace("T"," ")
-    end=json.data.query_endtime.replace("T"," ")
+
 
     inistialState=json.data.initial_state
 
     for (var i = 0; i < inistialState.length; i++) {
-      console.log(inistialState[i].source_id)
+     // console.log(inistialState[i].source_id)
       if(inistialState[i].source_id==cp){
         asPathToId[inistialState[i].path]=counter
         idSequence.push(counter)
+
         timestampSequence.push(start)
+        timestampSequenceCompressed.push(counterTimestampCompressed.toString())
+        
         counter=counter+100
         break
       }
       idSequence.push(0)
       timestampSequence.push(start)
+      timestampSequenceCompressed.push(counterTimestampCompressed.toString())
+
     }
 
     events=json.data.events
@@ -43,35 +68,49 @@ d3.json("https://stat.ripe.net/data/bgplay/data.json?resource=193.204.167.185", 
       record=events[i]
       if (record.attrs.source_id==cp){
         if (record.type=="A"){
-        path=record.attrs.path
-        timestamp=record.timestamp.replace("T"," ")
-        prev=idSequence[idSequence.length-1]
+          path=record.attrs.path
+          timestamp=record.timestamp
+          prev=idSequence[idSequence.length-1]
 
-        idSequence.push(prev)
-        timestampSequence.push(timestamp)
-
-        id=asPathToId[path]
-
-        if(id==undefined){
-          asPathToId[path]=counter
-          idSequence.push(counter)
+          idSequence.push(prev)
           timestampSequence.push(timestamp)
-          counter=counter+100
-        }
-        else{
-          idSequence.push(id)
-          timestampSequence.push(timestamp)
-        }
-       }
-       else{
-        timestamp=record.timestamp.replace("T"," ")
-        prev=idSequence[idSequence.length-1]
+          counterTimestampCompressed.setMinutes(counterTimestampCompressed.getMinutes() + 1);
+          timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
 
-        idSequence.push(prev)
-        timestampSequence.push(timestamp)
-        idSequence.push(0)
-        timestampSequence.push(timestamp)
-       }
+          id=asPathToId[path]
+
+          if(id==undefined){
+            asPathToId[path]=counter
+            idSequence.push(counter)
+            timestampSequence.push(timestamp)
+            timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
+            counter=counter+100
+          }
+          else{
+            idSequence.push(id)
+            timestampSequence.push(timestamp)
+          timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
+
+          }
+         }
+         else{
+            timestamp=record.timestamp
+            prev=idSequence[idSequence.length-1]
+
+            counterTimestampCompressed.setMinutes(counterTimestampCompressed.getMinutes() + 1);
+          timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
+
+            idSequence.push(prev)
+            
+            timestampSequence.push(timestamp)
+          timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
+            
+            idSequence.push(0)
+            
+            timestampSequence.push(timestamp)
+          timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
+
+         }
       }
     }
 
@@ -86,9 +125,17 @@ d3.json("https://stat.ripe.net/data/bgplay/data.json?resource=193.204.167.185", 
       y: idSequence,
       line: {color: '#17BECF'}
     }
+    var trace2 = {
+      type: "scatter",
+      mode: "lines",
+      name: 'AAPL Low',
+      x: timestampSequenceCompressed,
+      y: idSequence,
+      line: {color: '#7F7F7F'}
+    }
 
 
-    var data = [trace1];
+    var data = [trace1,trace2];
         
     var layout = {
       title: 'GdbDiagram', 
