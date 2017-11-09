@@ -1,0 +1,126 @@
+<head>
+  <!-- Plotly.js -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+
+</head>
+
+<body>
+  
+  <div id="myDiv"><!-- Plotly chart will be drawn inside this DIV --></div>
+  <script>
+d3.json("https://stat.ripe.net/data/bgplay/data.json?resource=193.204.167.185", function(error,json){
+    asPathToId=new Object()
+    asPathToId["W"]=0
+
+    idSequence=[]
+    timestampSequence=[]
+    counter=100
+
+    cp="04-192.65.185.195"
+    
+    start=json.data.query_starttime.replace("T"," ")
+    end=json.data.query_endtime.replace("T"," ")
+
+    inistialState=json.data.initial_state
+
+    for (var i = 0; i < inistialState.length; i++) {
+      console.log(inistialState[i].source_id)
+      if(inistialState[i].source_id==cp){
+        asPathToId[inistialState[i].path]=counter
+        idSequence.push(counter)
+        timestampSequence.push(start)
+        counter=counter+100
+        break
+      }
+      idSequence.push(0)
+      timestampSequence.push(start)
+    }
+
+    events=json.data.events
+
+    for (var i = 0; i < events.length; i++) {
+      record=events[i]
+      if (record.attrs.source_id==cp){
+        if (record.type=="A"){
+        path=record.attrs.path
+        timestamp=record.timestamp.replace("T"," ")
+        prev=idSequence[idSequence.length-1]
+
+        idSequence.push(prev)
+        timestampSequence.push(timestamp)
+
+        id=asPathToId[path]
+
+        if(id==undefined){
+          asPathToId[path]=counter
+          idSequence.push(counter)
+          timestampSequence.push(timestamp)
+          counter=counter+100
+        }
+        else{
+          idSequence.push(id)
+          timestampSequence.push(timestamp)
+        }
+       }
+       else{
+        timestamp=record.timestamp.replace("T"," ")
+        prev=idSequence[idSequence.length-1]
+
+        idSequence.push(prev)
+        timestampSequence.push(timestamp)
+        idSequence.push(0)
+        timestampSequence.push(timestamp)
+       }
+      }
+    }
+
+
+
+
+    var trace1 = {
+      type: "scatter",
+      mode: "lines",
+      name: 'AAPL High',
+      x: timestampSequence,
+      y: idSequence,
+      line: {color: '#17BECF'}
+    }
+
+
+    var data = [trace1];
+        
+    var layout = {
+      title: 'GdbDiagram', 
+      xaxis: {
+        autorange: true, 
+        range: [start, end], 
+        rangeselector: {buttons: [
+            {
+              count: 1, 
+              label: '1m', 
+              step: 'month', 
+              stepmode: 'backward'
+            }, 
+            {
+              count: 6, 
+              label: '6m', 
+              step: 'month', 
+              stepmode: 'backward'
+            }, 
+            {step: 'all'}
+          ]}, 
+        rangeslider: {range: [start, end]}, 
+        type: 'date'
+      }, 
+      yaxis: {
+        autorange: true, 
+        range: [0, counter], 
+        type: 'linear'
+      }
+    };
+
+    Plotly.newPlot('myDiv', data, layout);
+    })
+  </script>
+</body>
