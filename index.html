@@ -6,9 +6,89 @@
 </head>
 
 <body>
-  
+  <p id="demo" onclick="myFunction()">Click me.</p>
+
+
   <div id="myDiv"><!-- Plotly chart will be drawn inside this DIV --></div>
   <script>
+  /*  var p = document.createElement('p')
+    var node = document.createTextNode("prova")
+    p.appendChild(node)
+
+    document.body.appendChild(p)*/
+function myFunction() {
+    
+    var trace1 = {
+      type: "scatter",
+      mode: "lines",
+      name: 'bla bla',
+      x: timestampSequence,
+      y: idSequence,
+      line: {color: '#17BECF'}
+    }
+    var trace2 = {
+      type: "scatter",
+      mode: "lines",
+      name: 'sca sca',
+      x: timestampSequenceCompressed,
+      y: idSequence,
+      line: {color: '#7F7F7F'}
+    }
+
+
+    var data = [trace1,trace2];
+ /*      
+  resource=getParameterByName("resource")
+  if(resource==null)
+    resource="193.204.167.185"
+
+  starttime=getParameterByName("start")
+  if(starttime==null)
+    starttime="1510042362"
+
+  endtime=getParameterByName("end")
+  if(endtime==null)
+    endtime="1510215102"
+
+  cp=getParameterByName("cp")
+  if(cp==null)
+    cp="04-192.65.185.195"
+*/
+  //martedì 16.30
+      var layout = {
+        title: 'sbo of '+resource+' with data collected by '+cp+' from '+start+' to '+end, 
+        xaxis: {
+          autorange: true, 
+          range: [start, end], 
+          rangeselector: {buttons: [
+              {
+                count: 1, 
+                label: '1m', 
+                step: 'month', 
+                stepmode: 'backward'
+              }, 
+              {
+                count: 6, 
+                label: '6m', 
+                step: 'month', 
+                stepmode: 'backward'
+              }, 
+              {step: 'all'}
+            ]}, 
+          rangeslider: {range: [start, end]}, 
+          type: 'date'
+        }, 
+        yaxis: {
+          autorange: true, 
+          range: [0, counter], 
+          type: 'linear'
+        }
+      };
+
+      Plotly.newPlot('myDiv', data, layout);
+      
+}
+
 function convertDateFotmate(p1) {
     year=p1.getFullYear().toString()
     month=(p1.getMonth()+1).toString()     
@@ -19,8 +99,45 @@ function convertDateFotmate(p1) {
     return year+"-"+month+"-"+day+"T"+hour+":"+minutes+":"+  seconds    // The function returns the product of p1 and p2
 }
 
+function getParameterByName(name, url) {
+    if (!url) url = window.location.href;
+    name = name.replace(/[\[\]]/g, "\\$&");
+    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
 
-d3.json("https://stat.ripe.net/data/bgplay/data.json?resource=193.204.167.185", function(error,json){
+
+resource=getParameterByName("resource")
+if(resource==null)
+  resource="193.204.167.185"
+
+starttime=getParameterByName("start")
+if(starttime==null)
+  starttime="1510042362"
+
+endtime=getParameterByName("end")
+if(endtime==null)
+  endtime="1510215102"
+
+cp=getParameterByName("cp")
+if(cp==null)
+  cp="04-192.65.185.195"
+
+
+
+url="https://stat.ripe.net/data/bgplay/data.json?endtime="+endtime+"&resource="+resource+"&rrcs=0%2C1%2C2%2C5%2C6%2C7%2C10%2C11%2C13%2C14%2C15%2C16%2C18%2C20&starttime="+starttime+"&unix_timestamps=TRUE"
+
+
+
+var idSequence;
+var timestampSequence;
+var counterTimestampCompressed;
+
+
+d3.json("https://stat.ripe.net/data/bgplay/data.json?resource="+resource, function(error,json){
     start=json.data.query_starttime
     end=json.data.query_endtime
 
@@ -35,15 +152,8 @@ d3.json("https://stat.ripe.net/data/bgplay/data.json?resource=193.204.167.185", 
 
     counter=100
 
-
-
-
-    cp="04-192.65.185.195"
-    
-
-
     inistialState=json.data.initial_state
-
+    trovato=false
     for (var i = 0; i < inistialState.length; i++) {
      // console.log(inistialState[i].source_id)
       if(inistialState[i].source_id==cp){
@@ -51,15 +161,17 @@ d3.json("https://stat.ripe.net/data/bgplay/data.json?resource=193.204.167.185", 
         idSequence.push(counter)
 
         timestampSequence.push(start)
-        timestampSequenceCompressed.push(counterTimestampCompressed.toString())
+        timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
         
         counter=counter+100
+        trovato=true
         break
       }
+    }
+    if(trovato==false){
       idSequence.push(0)
       timestampSequence.push(start)
-      timestampSequenceCompressed.push(counterTimestampCompressed.toString())
-
+      timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
     }
 
     events=json.data.events
@@ -67,6 +179,7 @@ d3.json("https://stat.ripe.net/data/bgplay/data.json?resource=193.204.167.185", 
     for (var i = 0; i < events.length; i++) {
       record=events[i]
       if (record.attrs.source_id==cp){
+        console.log("ok")
         if (record.type=="A"){
           path=record.attrs.path
           timestamp=record.timestamp
@@ -113,14 +226,18 @@ d3.json("https://stat.ripe.net/data/bgplay/data.json?resource=193.204.167.185", 
          }
       }
     }
+    end=json.data.query_endtime
 
+    prev=idSequence[idSequence.length-1]
 
-
+    idSequence.push(prev)
+    timestampSequence.push(end)
+    timestampSequenceCompressed.push(end)
 
     var trace1 = {
       type: "scatter",
       mode: "lines",
-      name: 'AAPL High',
+      name: 'Not compressed',
       x: timestampSequence,
       y: idSequence,
       line: {color: '#17BECF'}
@@ -128,7 +245,7 @@ d3.json("https://stat.ripe.net/data/bgplay/data.json?resource=193.204.167.185", 
     var trace2 = {
       type: "scatter",
       mode: "lines",
-      name: 'AAPL Low',
+      name: 'Compressed',
       x: timestampSequenceCompressed,
       y: idSequence,
       line: {color: '#7F7F7F'}
@@ -136,38 +253,58 @@ d3.json("https://stat.ripe.net/data/bgplay/data.json?resource=193.204.167.185", 
 
 
     var data = [trace1,trace2];
-        
-    var layout = {
-      title: 'GdbDiagram', 
-      xaxis: {
-        autorange: true, 
-        range: [start, end], 
-        rangeselector: {buttons: [
-            {
-              count: 1, 
-              label: '1m', 
-              step: 'month', 
-              stepmode: 'backward'
-            }, 
-            {
-              count: 6, 
-              label: '6m', 
-              step: 'month', 
-              stepmode: 'backward'
-            }, 
-            {step: 'all'}
-          ]}, 
-        rangeslider: {range: [start, end]}, 
-        type: 'date'
-      }, 
-      yaxis: {
-        autorange: true, 
-        range: [0, counter], 
-        type: 'linear'
-      }
-    };
+ /*      
+  resource=getParameterByName("resource")
+  if(resource==null)
+    resource="193.204.167.185"
 
-    Plotly.newPlot('myDiv', data, layout);
-    })
+  starttime=getParameterByName("start")
+  if(starttime==null)
+    starttime="1510042362"
+
+  endtime=getParameterByName("end")
+  if(endtime==null)
+    endtime="1510215102"
+
+  cp=getParameterByName("cp")
+  if(cp==null)
+    cp="04-192.65.185.195"
+*/
+  //martedì 16.30
+      var layout = {
+        title: 'GdbDiagram of '+resource+' with data collected by '+cp+' from '+start+' to '+end, 
+        xaxis: {
+          autorange: true, 
+          range: [start, end], 
+          rangeselector: {buttons: [
+              {
+                count: 1, 
+                label: '1m', 
+                step: 'month', 
+                stepmode: 'backward'
+              }, 
+              {
+                count: 6, 
+                label: '6m', 
+                step: 'month', 
+                stepmode: 'backward'
+              }, 
+              {step: 'all'}
+            ]}, 
+          rangeslider: {range: [start, end]}, 
+          type: 'date'
+        }, 
+        yaxis: {
+          autorange: true, 
+          range: [0, counter], 
+          type: 'linear'
+        }
+      };
+
+      Plotly.newPlot('myDiv', data, layout);
+      })
+      keys=asPathToId.keys()
+      document.write(keys)
+
   </script>
 </body>
