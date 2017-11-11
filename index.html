@@ -2,61 +2,111 @@
   <!-- Plotly.js -->
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script type="text/javascript" src="dataAdapter.js"></script>
+
 
 </head>
 
 <body>
-  <p id="demo" onclick="myFunction()">Click me.</p>
-
-
+  <p id="demo" onclick="getCompressedPlot()">Get Compressed Plot</p>
   <div id="myDiv"><!-- Plotly chart will be drawn inside this DIV --></div>
   <script>
-  /*  var p = document.createElement('p')
-    var node = document.createTextNode("prova")
-    p.appendChild(node)
 
-    document.body.appendChild(p)*/
-function myFunction() {
+var cpToCounter;
+var x;
+function updateMostUnstable(mostUnstable,numberOfUpdates,cp,cpToObservationData,minOfMostUnstable,nCpToShow){
+  trovato=false
+
+  if(Object.keys(mostUnstable).length<nCpToShow){
+    mostUnstable[cp]=cpToObservationData[cp]
+  }
+  else{
+  for(currentCp in mostUnstable){
+    console.log(minOfMostUnstable)
+    console.log("****")
+      currentNumberOfUpdates=mostUnstable[currentCp][2].length
+      if(currentNumberOfUpdates==minOfMostUnstable){
+        console.log(mostUnstable)
+        delete mostUnstable[currentCp]
+        mostUnstable[cp]=cpToObservationData[cp]
+        console.log(mostUnstable)
+        console.log("*****************")
+        break    
+  }
+}
+}
+return mostUnstable
+}
+
+function getMinUpdatesCount(mostUnstable){
+  currentMin=2000000000000
+  for(currentCp in mostUnstable){
+    currentNumberOfUpdates=mostUnstable[currentCp][2].length
+    if(currentNumberOfUpdates<currentMin){
+      currentMin=currentNumberOfUpdates
+    }
+  }
+  return currentMin
+}
+function getNMostUnstableCPdata(cpToObservationData,nCpToShow){
+  var mostUnstable=new Object()
+  var minOfMostUnstable=-1
+  var inserimenti=0
+  for(cp in cpToObservationData){
+  //        console.log(minOfMostUnstable)
+    //console.log(cp)
+   // console.log(cpToObservationData[cp])
+  //    console.log(minOfMostUnstable)
+   // console.log("@@@@@")
+    numberOfUpdates=cpToObservationData[cp][2].length
+
+    if(numberOfUpdates>minOfMostUnstable){
+  //    console.log(inserimenti)
+  //   console.log(minOfMostUnstable)
+  //    console.log("*****")
+      inserimenti+=1
+ //     console.log(minOfMostUnstable)
+  //    console.log(numberOfUpdates)
+      mostUnstable=updateMostUnstable(mostUnstable,numberOfUpdates,cp,cpToObservationData,minOfMostUnstable,nCpToShow)
+      minOfMostUnstable=getMinUpdatesCount(mostUnstable)
     
-    var trace1 = {
-      type: "scatter",
-      mode: "lines",
-      name: 'bla bla',
-      x: timestampSequence,
-      y: idSequence,
-      line: {color: '#17BECF'}
     }
-    var trace2 = {
-      type: "scatter",
-      mode: "lines",
-      name: 'sca sca',
-      x: timestampSequenceCompressed,
-      y: idSequence,
-      line: {color: '#7F7F7F'}
+  }
+  x=mostUnstable
+
+  return mostUnstable
+}
+
+function plotDiagram(cpToObservationData,start,end,resource,typeOfVisualization,counter,nCpToShow){
+      data=[]
+      var cpCounter=0
+
+
+      unstableCpToData=getNMostUnstableCPdata(cpToObservationData,nCpToShow)
+      for(cp in unstableCpToData){
+        cpCounter=cpCounter+1
+        if(cpCounter<8){
+        timestampSequence=unstableCpToData[cp][0]//timestamp not compressed, timestampSequence
+        timestampSequenceCompressed=unstableCpToData[cp][1]//timestamp compressed, timestampSequenceCompressed
+        idSequence=unstableCpToData[cp][2]//idsSequence
+        asPathSequence=unstableCpToData[cp][3]//as path sequence
+
+        var colorRandom='#'+(0x1000000+(Math.random())*0xffffff).toString(16).substr(1,6);
+
+        var trace = {
+          type: "scatter",
+          mode: "lines",
+          name: cp.toString(),
+          x: timestampSequence,
+          y: idSequence,
+          line: {color: colorRandom}
+        }
+        data.push(trace)
+
+      }
     }
-
-
-    var data = [trace1,trace2];
- /*      
-  resource=getParameterByName("resource")
-  if(resource==null)
-    resource="193.204.167.185"
-
-  starttime=getParameterByName("start")
-  if(starttime==null)
-    starttime="1510042362"
-
-  endtime=getParameterByName("end")
-  if(endtime==null)
-    endtime="1510215102"
-
-  cp=getParameterByName("cp")
-  if(cp==null)
-    cp="04-192.65.185.195"
-*/
-  //martedì 16.30
       var layout = {
-        title: 'sbo of '+resource+' with data collected by '+cp+' from '+start+' to '+end, 
+        title: 'GDBDiagram of '+resource+' from '+start+' to '+end, 
         xaxis: {
           autorange: true, 
           range: [start, end], 
@@ -89,6 +139,7 @@ function myFunction() {
       
 }
 
+
 function convertDateFotmate(p1) {
     year=p1.getFullYear().toString()
     month=(p1.getMonth()+1).toString()     
@@ -101,7 +152,8 @@ function convertDateFotmate(p1) {
 
 function getParameterByName(name, url) {
     if (!url) url = window.location.href;
-    name = name.replace(/[\[\]]/g, "\\$&");
+      name = name.replace(/[\[\]]/g, "\\$&");
+      
     var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
         results = regex.exec(url);
     if (!results) return null;
@@ -109,6 +161,15 @@ function getParameterByName(name, url) {
     return decodeURIComponent(results[2].replace(/\+/g, " "));
 }
 
+function convertDateFotmate(p1) {
+    year=p1.getFullYear().toString()
+    month=(p1.getMonth()+1).toString()     
+    day=p1.getDate().toString()
+    hour=p1.getHours().toString()
+    minutes=p1.getMinutes().toString()
+    seconds=p1.getSeconds().toString()
+    return year+"-"+month+"-"+day+"T"+hour+":"+minutes+":"+  seconds    // The function returns the product of p1 and p2
+}
 
 resource=getParameterByName("resource")
 if(resource==null)
@@ -122,82 +183,108 @@ endtime=getParameterByName("end")
 if(endtime==null)
   endtime="1510215102"
 
-cp=getParameterByName("cp")
-if(cp==null)
-  cp="04-192.65.185.195"
-
-
-
-url="https://stat.ripe.net/data/bgplay/data.json?endtime="+endtime+"&resource="+resource+"&rrcs=0%2C1%2C2%2C5%2C6%2C7%2C10%2C11%2C13%2C14%2C15%2C16%2C18%2C20&starttime="+starttime+"&unix_timestamps=TRUE"
-
-
+url="https://stat.ripe.net/data/bgplay/data.json?endtime=1510305183&resource=193.204.167.185&rrcs=12&starttime=1510132383&unix_timestamps=TRUE"
+//url="https://stat.ripe.net/data/bgplay/data.json?endtime="+endtime+"&resource="+resource+"&rrcs=12&starttime="+starttime+"&unix_timestamps=TRUE"
 
 var idSequence;
 var timestampSequence;
 var counterTimestampCompressed;
+var asPathToId=new Object()
+asPathToId["W"]=0
+var cpToObservationData=new Object()
+var typeOfVisualization="notCompressed"
+var nCpToShow=5
 
-
+//controllare che in initial state ci siano tutte le sources
 d3.json("https://stat.ripe.net/data/bgplay/data.json?resource="+resource, function(error,json){
     start=json.data.query_starttime
     end=json.data.query_endtime
+    inistialState=json.data.initial_state
 
-    asPathToId=new Object()
-    asPathToId["W"]=0
 
     idSequence=[]
     timestampSequence=[]
     timestampSequenceCompressed=[]
 
     counterTimestampCompressed=new Date(start)
+    idCounter=100
 
-    counter=100
 
-    inistialState=json.data.initial_state
-    trovato=false
-    for (var i = 0; i < inistialState.length; i++) {
-     // console.log(inistialState[i].source_id)
-      if(inistialState[i].source_id==cp){
-        asPathToId[inistialState[i].path]=counter
-        idSequence.push(counter)
+    for (var i = 0; i < json.data.sources.length; i++) {
+      cp=json.data.sources[i].id
+      cpToObservationData[cp]=[]
+      cpToObservationData[cp][0]=[]//timestamp not compressed, timestampSequence
+      cpToObservationData[cp][1]=[]//timestamp compressed, timestampSequenceCompressed
+      cpToObservationData[cp][2]=[]//idsSequence
+      cpToObservationData[cp][3]=[]//as path sequence
 
-        timestampSequence.push(start)
-        timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
-        
-        counter=counter+100
-        trovato=true
-        break
-      }
+
+      cpToObservationData[cp][0].push(start)
+      cpToObservationData[cp][1].push(convertDateFotmate(counterTimestampCompressed))
+      cpToObservationData[cp][2].push(0)
+      cpToObservationData[cp][3].push("W")
+     
+
     }
-    if(trovato==false){
-      idSequence.push(0)
-      timestampSequence.push(start)
-      timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
+
+    for (var i = 0; i < inistialState.length; i++) {
+        cp=inistialState[i].source_id
+
+        observationData=cpToObservationData[cp]
+        asPath=inistialState[i].path
+        cpToObservationData[cp][0]=[start]
+        cpToObservationData[cp][1]=[convertDateFotmate(counterTimestampCompressed)]
+
+        id=asPathToId[asPath]
+
+        if(id==undefined){
+          asPathToId[inistialState[i].path]=idCounter
+          cpToObservationData[cp][2]=[idCounter]
+          idCounter=idCounter+100
+
+        }
+        else{
+          cpToObservationData[cp][2]=[id]
+        }
+
+        cpToObservationData[cp][3]=[asPath]
     }
 
     events=json.data.events
 
     for (var i = 0; i < events.length; i++) {
       record=events[i]
-      if (record.attrs.source_id==cp){
-        console.log("ok")
+      cp=record.attrs.source_id
+      timestampSequence=cpToObservationData[cp][0]//timestamp not compressed, timestampSequence
+      timestampSequenceCompressed=cpToObservationData[cp][1]//timestamp compressed, timestampSequenceCompressed
+      idSequence=cpToObservationData[cp][2]//idsSequence
+      asPathSequence=cpToObservationData[cp][3]//as path sequence
+
+
         if (record.type=="A"){
           path=record.attrs.path
           timestamp=record.timestamp
-          prev=idSequence[idSequence.length-1]
 
+          prev=idSequence[idSequence.length-1]
           idSequence.push(prev)
+
           timestampSequence.push(timestamp)
+
           counterTimestampCompressed.setMinutes(counterTimestampCompressed.getMinutes() + 1);
           timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
+
+          prevAsPath=asPathSequence[asPathSequence.length-1]
+          asPathSequence.push(prevAsPath)
+          asPathSequence.push(path)
 
           id=asPathToId[path]
 
           if(id==undefined){
-            asPathToId[path]=counter
-            idSequence.push(counter)
+            asPathToId[path]=idCounter
+            idSequence.push(idCounter)
             timestampSequence.push(timestamp)
             timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
-            counter=counter+100
+            idCounter=idCounter+100
           }
           else{
             idSequence.push(id)
@@ -207,104 +294,59 @@ d3.json("https://stat.ripe.net/data/bgplay/data.json?resource="+resource, functi
           }
          }
          else{
+            prevAsPath=asPathSequence[asPathSequence.length-1]
+            asPathSequence.push(prevAsPath)
+            asPathSequence.push("W")
+
             timestamp=record.timestamp
+
             prev=idSequence[idSequence.length-1]
 
             counterTimestampCompressed.setMinutes(counterTimestampCompressed.getMinutes() + 1);
-          timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
+            timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
 
             idSequence.push(prev)
-            
-            timestampSequence.push(timestamp)
-          timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
-            
-            idSequence.push(0)
-            
-            timestampSequence.push(timestamp)
-          timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
 
+            timestampSequence.push(timestamp)
+            timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
+
+            idSequence.push(0)
+
+            timestampSequence.push(timestamp)
+            timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
          }
-      }
+      cpToObservationData[cp][0]=timestampSequence//timestamp not compressed, timestampSequence
+      cpToObservationData[cp][1]=timestampSequenceCompressed//timestamp compressed, timestampSequenceCompressed
+      cpToObservationData[cp][2]=idSequence//idsSequence
+      cpToObservationData[cp][3]=asPathSequence//as path sequence
     }
     end=json.data.query_endtime
 
-    prev=idSequence[idSequence.length-1]
+    for(cp in cpToObservationData){
 
-    idSequence.push(prev)
-    timestampSequence.push(end)
-    timestampSequenceCompressed.push(end)
+      timestampSequence=cpToObservationData[cp][0]//timestamp not compressed, timestampSequence
+      timestampSequenceCompressed=cpToObservationData[cp][1]//timestamp compressed, timestampSequenceCompressed
+      idSequence=cpToObservationData[cp][2]//idsSequence
+      asPathSequence=cpToObservationData[cp][3]//as path sequence
 
-    var trace1 = {
-      type: "scatter",
-      mode: "lines",
-      name: 'Not compressed',
-      x: timestampSequence,
-      y: idSequence,
-      line: {color: '#17BECF'}
+      prev=idSequence[idSequence.length-1]
+      prevAsPath=asPathSequence[asPathSequence.length-1]
+
+      idSequence.push(prev)
+      asPathSequence.push(prevAsPath)
+      timestampSequence.push(end)
+      timestampSequenceCompressed.push(end)
+
+      cpToObservationData[cp][0]=timestampSequence//timestamp not compressed, timestampSequence
+      cpToObservationData[cp][1]=timestampSequenceCompressed//timestamp compressed, timestampSequenceCompressed
+      cpToObservationData[cp][2]=idSequence//idsSequence
+      cpToObservationData[cp][3]=asPathSequence//as path sequence
     }
-    var trace2 = {
-      type: "scatter",
-      mode: "lines",
-      name: 'Compressed',
-      x: timestampSequenceCompressed,
-      y: idSequence,
-      line: {color: '#7F7F7F'}
+    plotDiagram(cpToObservationData,start,end,resource,typeOfVisualization,idCounter,nCpToShow)
+    cpToCounter=new Object()
+    for(cp in cpToObservationData){
+      cpToCounter[cp]=cpToObservationData[cp][2].length
     }
-
-
-    var data = [trace1,trace2];
- /*      
-  resource=getParameterByName("resource")
-  if(resource==null)
-    resource="193.204.167.185"
-
-  starttime=getParameterByName("start")
-  if(starttime==null)
-    starttime="1510042362"
-
-  endtime=getParameterByName("end")
-  if(endtime==null)
-    endtime="1510215102"
-
-  cp=getParameterByName("cp")
-  if(cp==null)
-    cp="04-192.65.185.195"
-*/
-  //martedì 16.30
-      var layout = {
-        title: 'GdbDiagram of '+resource+' with data collected by '+cp+' from '+start+' to '+end, 
-        xaxis: {
-          autorange: true, 
-          range: [start, end], 
-          rangeselector: {buttons: [
-              {
-                count: 1, 
-                label: '1m', 
-                step: 'month', 
-                stepmode: 'backward'
-              }, 
-              {
-                count: 6, 
-                label: '6m', 
-                step: 'month', 
-                stepmode: 'backward'
-              }, 
-              {step: 'all'}
-            ]}, 
-          rangeslider: {range: [start, end]}, 
-          type: 'date'
-        }, 
-        yaxis: {
-          autorange: true, 
-          range: [0, counter], 
-          type: 'linear'
-        }
-      };
-
-      Plotly.newPlot('myDiv', data, layout);
-      })
-      keys=asPathToId.keys()
-      document.write(keys)
-
+})
   </script>
 </body>
