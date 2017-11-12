@@ -2,90 +2,162 @@
   <!-- Plotly.js -->
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://d3js.org/d3.v4.min.js"></script>
-  <script type="text/javascript" src="dataAdapter.js"></script>
-
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <link href="http://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.3/css/bootstrap.min.css"
+        rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.3/js/bootstrap.min.js"></script>
+    <link href="http://cdn.rawgit.com/davidstutz/bootstrap-multiselect/master/dist/css/bootstrap-multiselect.css"
+        rel="stylesheet" type="text/css" />
+    <script src="http://cdn.rawgit.com/davidstutz/bootstrap-multiselect/master/dist/js/bootstrap-multiselect.js"
+        type="text/javascript"></script>
 
 </head>
 
 <body>
-  <p id="demo" onclick="getCompressedPlot()">Get Compressed Plot</p>
+  <a class="btn btn-default" href="#" role="button" onclick="getCompressedPlot()">Coompress time</a>
+    <a class="btn btn-default" href="#" role="button" onclick="getCompressedPlot()">Uncompress time</a>
+<!--    <select id="lstFruits" multiple="multiple"></select>
+    <input type="button" id="btnSelected" value="Get the GDBD of Selected Peers. " />-->
+  <select id="lstFruits" multiple="multiple" size="5" style="width:100px;">
+        </select>
+        <input type="button" id="btnSelected" value="Get gdbf of selected peers" />
+
+  <input class="btn btn-default" type="change upstream leve" value="Submit" onclick="getCompressedPlot()">
+    <a class="btn btn-default" href="#" role="button" onclick="alert('Click on compressed time button to get a view of the gdbdiagram in terms of sequence of as-path ignoring the time between two consecutive updates.\n Click on uncompress time button to  get a view of the gdbdiagram in terms of sequence of as-path considering the time between two consecutive updates (default).\n The default shows the GDBDiagram of the 5 most unstable collector peers. You can select other collect peers from drop down menu. ')">Help</a>
+
   <div id="myDiv"><!-- Plotly chart will be drawn inside this DIV --></div>
+
+
+
+
+
   <script>
 
-var cpToCounter;
-var x;
-function updateMostUnstable(mostUnstable,numberOfUpdates,cp,cpToObservationData,minOfMostUnstable,nCpToShow){
-  trovato=false
 
-  if(Object.keys(mostUnstable).length<nCpToShow){
+function SetMedia(cpToObservationData) {
+
+  for(cp in cpToObservationData){
+      var str="<option>"+cp+" ("+cpToObservationData[cp][2].length+")</option>"
+        $("#lstFruits").append(str);
+      }
+      $(function () {
+            $('#lstFruits').multiselect({
+                includeSelectAllOption: false
+            });
+            $('#btnSelected').click(function () {
+                var selected = $("#lstFruits option:selected");
+                var message = "";
+                selected.each(function () {
+                    message += $(this).text()+"|";
+                });
+                getNewVisualization(cpToObservationData,message,"exact");
+            });
+        });
+
+      }
+
+function getNewVisualization(cpToObservationData,message,typeOfVisualization){
+    var nCpToShow=0
+
+    var toVisualize=new Object()
+    var splittedMessage = message.split("|");
+    for (var i = splittedMessage.length - 1; i >= 0; i--) {
+      cp=splittedMessage[i].split(" ")[0].replace(/\s/g, '');
+      if(cp!=""){
+        nCpToShow=nCpToShow+1
+       toVisualize[cp]=cpToObservationData[cp]
+      }
+    }
+    console.log(toVisualize)
+    plotDiagram(toVisualize,start,end,resource,typeOfVisualization,idCounter,nCpToShow)
+
+    
+}
+
+function updateMostUnstable(mostUnstable,numberOfUpdates,cp,cpToObservationData,minOfMostUnstable,nCpToShow){
+
+  if(Object.keys(mostUnstable).length<nCpToShow)
     mostUnstable[cp]=cpToObservationData[cp]
-  }
+  
   else{
-  for(currentCp in mostUnstable){
-    console.log(minOfMostUnstable)
-    console.log("****")
+    for(currentCp in mostUnstable){
+      
       currentNumberOfUpdates=mostUnstable[currentCp][2].length
+      
       if(currentNumberOfUpdates==minOfMostUnstable){
-        console.log(mostUnstable)
         delete mostUnstable[currentCp]
         mostUnstable[cp]=cpToObservationData[cp]
-        console.log(mostUnstable)
-        console.log("*****************")
         break    
+      }
+    }
   }
-}
-}
-return mostUnstable
+  return mostUnstable
 }
 
 function getMinUpdatesCount(mostUnstable){
   currentMin=2000000000000
+  
   for(currentCp in mostUnstable){
     currentNumberOfUpdates=mostUnstable[currentCp][2].length
+    
     if(currentNumberOfUpdates<currentMin){
       currentMin=currentNumberOfUpdates
     }
   }
   return currentMin
 }
+
 function getNMostUnstableCPdata(cpToObservationData,nCpToShow){
   var mostUnstable=new Object()
   var minOfMostUnstable=-1
-  var inserimenti=0
+
   for(cp in cpToObservationData){
-  //        console.log(minOfMostUnstable)
-    //console.log(cp)
-   // console.log(cpToObservationData[cp])
-  //    console.log(minOfMostUnstable)
-   // console.log("@@@@@")
     numberOfUpdates=cpToObservationData[cp][2].length
 
     if(numberOfUpdates>minOfMostUnstable){
-  //    console.log(inserimenti)
-  //   console.log(minOfMostUnstable)
-  //    console.log("*****")
-      inserimenti+=1
- //     console.log(minOfMostUnstable)
-  //    console.log(numberOfUpdates)
+
       mostUnstable=updateMostUnstable(mostUnstable,numberOfUpdates,cp,cpToObservationData,minOfMostUnstable,nCpToShow)
       minOfMostUnstable=getMinUpdatesCount(mostUnstable)
     
     }
   }
-  x=mostUnstable
-
   return mostUnstable
 }
+
+    
+function convertDateFotmate(p1) {
+    year=p1.getFullYear().toString()
+    month=(p1.getMonth()+1).toString()     
+    day=p1.getDate().toString()
+    hour=p1.getHours().toString()
+    minutes=p1.getMinutes().toString()
+    seconds=p1.getSeconds().toString()
+    return year+"-"+month+"-"+day+"T"+hour+":"+minutes+":"+  seconds    // The function returns the product of p1 and p2
+}
+
+function getParameterByName(name, url) {
+    if (!url) url = window.location.href;
+      name = name.replace(/[\[\]]/g, "\\$&");
+      
+    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+
 
 function plotDiagram(cpToObservationData,start,end,resource,typeOfVisualization,counter,nCpToShow){
       data=[]
       var cpCounter=0
-
-
-      unstableCpToData=getNMostUnstableCPdata(cpToObservationData,nCpToShow)
+      if(typeOfVisualization=="notCompressed")
+        unstableCpToData=getNMostUnstableCPdata(cpToObservationData,nCpToShow)
+      else
+        unstableCpToData=cpToObservationData
+      console.log(unstableCpToData)
       for(cp in unstableCpToData){
         cpCounter=cpCounter+1
-        if(cpCounter<8){
         timestampSequence=unstableCpToData[cp][0]//timestamp not compressed, timestampSequence
         timestampSequenceCompressed=unstableCpToData[cp][1]//timestamp compressed, timestampSequenceCompressed
         idSequence=unstableCpToData[cp][2]//idsSequence
@@ -102,8 +174,7 @@ function plotDiagram(cpToObservationData,start,end,resource,typeOfVisualization,
           line: {color: colorRandom}
         }
         data.push(trace)
-
-      }
+      
     }
       var layout = {
         title: 'GDBDiagram of '+resource+' from '+start+' to '+end, 
@@ -134,81 +205,13 @@ function plotDiagram(cpToObservationData,start,end,resource,typeOfVisualization,
           type: 'linear'
         }
       };
-
       Plotly.newPlot('myDiv', data, layout);
-      
 }
 
 
-function convertDateFotmate(p1) {
-    year=p1.getFullYear().toString()
-    month=(p1.getMonth()+1).toString()     
-    day=p1.getDate().toString()
-    hour=p1.getHours().toString()
-    minutes=p1.getMinutes().toString()
-    seconds=p1.getSeconds().toString()
-    return year+"-"+month+"-"+day+"T"+hour+":"+minutes+":"+  seconds    // The function returns the product of p1 and p2
-}
 
-function getParameterByName(name, url) {
-    if (!url) url = window.location.href;
-      name = name.replace(/[\[\]]/g, "\\$&");
-      
-    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-        results = regex.exec(url);
-    if (!results) return null;
-    if (!results[2]) return '';
-    return decodeURIComponent(results[2].replace(/\+/g, " "));
-}
-
-function convertDateFotmate(p1) {
-    year=p1.getFullYear().toString()
-    month=(p1.getMonth()+1).toString()     
-    day=p1.getDate().toString()
-    hour=p1.getHours().toString()
-    minutes=p1.getMinutes().toString()
-    seconds=p1.getSeconds().toString()
-    return year+"-"+month+"-"+day+"T"+hour+":"+minutes+":"+  seconds    // The function returns the product of p1 and p2
-}
-
-resource=getParameterByName("resource")
-if(resource==null)
-  resource="193.204.167.185"
-
-starttime=getParameterByName("start")
-if(starttime==null)
-  starttime="1510042362"
-
-endtime=getParameterByName("end")
-if(endtime==null)
-  endtime="1510215102"
-
-url="https://stat.ripe.net/data/bgplay/data.json?endtime=1510305183&resource=193.204.167.185&rrcs=12&starttime=1510132383&unix_timestamps=TRUE"
-//url="https://stat.ripe.net/data/bgplay/data.json?endtime="+endtime+"&resource="+resource+"&rrcs=12&starttime="+starttime+"&unix_timestamps=TRUE"
-
-var idSequence;
-var timestampSequence;
-var counterTimestampCompressed;
-var asPathToId=new Object()
-asPathToId["W"]=0
-var cpToObservationData=new Object()
-var typeOfVisualization="notCompressed"
-var nCpToShow=5
-
-//controllare che in initial state ci siano tutte le sources
-d3.json("https://stat.ripe.net/data/bgplay/data.json?resource="+resource, function(error,json){
-    start=json.data.query_starttime
-    end=json.data.query_endtime
+function getInitialState(json){
     inistialState=json.data.initial_state
-
-
-    idSequence=[]
-    timestampSequence=[]
-    timestampSequenceCompressed=[]
-
-    counterTimestampCompressed=new Date(start)
-    idCounter=100
-
 
     for (var i = 0; i < json.data.sources.length; i++) {
       cp=json.data.sources[i].id
@@ -249,6 +252,10 @@ d3.json("https://stat.ripe.net/data/bgplay/data.json?resource="+resource, functi
 
         cpToObservationData[cp][3]=[asPath]
     }
+    return cpToObservationData
+}
+
+function getEvents(json){
 
     events=json.data.events
 
@@ -289,7 +296,7 @@ d3.json("https://stat.ripe.net/data/bgplay/data.json?resource="+resource, functi
           else{
             idSequence.push(id)
             timestampSequence.push(timestamp)
-          timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
+           timestampSequenceCompressed.push(convertDateFotmate(counterTimestampCompressed))
 
           }
          }
@@ -320,6 +327,11 @@ d3.json("https://stat.ripe.net/data/bgplay/data.json?resource="+resource, functi
       cpToObservationData[cp][2]=idSequence//idsSequence
       cpToObservationData[cp][3]=asPathSequence//as path sequence
     }
+    return cpToObservationData
+}
+
+function getEndState(json){
+
     end=json.data.query_endtime
 
     for(cp in cpToObservationData){
@@ -342,11 +354,55 @@ d3.json("https://stat.ripe.net/data/bgplay/data.json?resource="+resource, functi
       cpToObservationData[cp][2]=idSequence//idsSequence
       cpToObservationData[cp][3]=asPathSequence//as path sequence
     }
+
+    return cpToObservationData
+}
+
+
+resource=getParameterByName("resource")
+if(resource==null)
+  resource="193.204.167.185"
+
+starttime=getParameterByName("start")
+if(starttime==null)
+  starttime="1510042362"
+
+endtime=getParameterByName("end")
+if(endtime==null)
+  endtime="1510215102"
+
+url="https://stat.ripe.net/data/bgplay/data.json?endtime=1510305183&resource=193.204.167.185&rrcs=12&starttime=1510132383&unix_timestamps=TRUE"
+//url="https://stat.ripe.net/data/bgplay/data.json?endtime="+endtime+"&resource="+resource+"&rrcs=12&starttime="+starttime+"&unix_timestamps=TRUE"
+
+var idSequence=[]
+var timestampSequence=[]
+var counterTimestampCompressed=[]
+var asPathToId=new Object()
+asPathToId["W"]=0
+var cpToObservationData=new Object()
+var typeOfVisualization="notCompressed"
+var nCpToShow=5
+var start
+var end
+var counterTimestampCompressed
+
+d3.json("https://stat.ripe.net/data/bgplay/data.json?resource="+resource, function(error,json){
+    start=json.data.query_starttime
+    end=json.data.query_endtime
+
+
+    counterTimestampCompressed=new Date(start)
+    idCounter=100
+
+    cpToObservationData=getInitialState(json)
+    cpToObservationData=getEvents(json)
+    cpToObservationData=getEndState(json)
+
     plotDiagram(cpToObservationData,start,end,resource,typeOfVisualization,idCounter,nCpToShow)
-    cpToCounter=new Object()
-    for(cp in cpToObservationData){
-      cpToCounter[cp]=cpToObservationData[cp][2].length
-    }
+    SetMedia(cpToObservationData)
 })
+
+
   </script>
+
 </body>
