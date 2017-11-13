@@ -29,7 +29,7 @@
 
       <a class="btn btn-default" href="#" role="button" onclick="test()">getGDBdiagram!</a>
 
-  <div id="myDiv"><!-- Plotly chart will be drawn inside this DIV --></div>
+  <div id="myDiv" align="center"><!-- Plotly chart will be drawn inside this DIV --></div>
 
 <script type="text/javascript" src="//cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
 <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap/3/css/bootstrap.css" />
@@ -53,10 +53,12 @@ function test(){
   end=date.split(" - ")[1]
   nCpToShow=document.getElementById("nCpToShow").value
   ipPrefix=document.getElementById("ipPrefix").value
-  rrcs=document.getElementById("rrcs")
+  rrcs=document.getElementById("rrcs").value
+
+
   sequenceRrc=""
 
-  if(rrcs="all")
+  if(rrcs=="all")
     sequenceRrc="0%2C1%2C2%2C5%2C6%2C7%2C10%2C11%2C13%2C14%2C15%2C16%2C18%2C20"
   else{
   rrcs=rrcs.value.split(",")
@@ -66,7 +68,7 @@ function test(){
     sequenceRrc+=rrc+"%2C"
   }
   sequenceRrc=sequenceRrc.substring(0,sequenceRrc.length-3)}
-  url="http://localhost:8006/?rrcs="+rrcs+"&nCpToShow="+nCpToShow+"&ipPrefix="+ipPrefix+"&start="+start+"&end="+end
+  url="http://localhost:8006/?rrcs="+sequenceRrc +"&nCpToShow="+nCpToShow+"&ipPrefix="+ipPrefix+"&start="+start+"&end="+end
   myFunction(url)
 
 
@@ -573,7 +575,7 @@ function printIdToAsPath(asPathToId,toVisualize){
 }
   </script>
 
-<div class="container">
+<div class="container" align="left">
   <h2>Basic Table</h2>
   <p>The .table class adds basic styling (light padding and only horizontal dividers) to a table:</p>            
   <table class="table">
